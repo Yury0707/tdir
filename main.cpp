@@ -1,18 +1,27 @@
-#include <QCoreApplication>
+/*! \file       main.cpp
+ *  \author     Yury Osipov (yusosipov@ya.ru)
+ *  \version    1.0.0.1
+ *  \date       August, 2018
+ *  \brief      Main Application File.
+ *
+ *  This file contains the main function of the application.
+ */
 
-#include "fileenumerator.h"
+#include <QCoreApplication>
 #include <QTextCodec>
+#include <QTimer>
+
 #include <QDebug>
 
-enum
-{
-    TDIR_ARG_NO_ERROR,
-    TDIR_ARG_ERR_WRONG_OPTION_POS,
-    TDIR_ARG_ERR_UNKNOWN_OPTION,
-    TDIR_ARG_ERR_OPTION_DUPLICATION,
-    TDIR_ARG_UNKNOWN_ERROR
-};
+#include "fileenumerator.h"
+#include "exitcodes.h"
 
+/*!
+ * Main application function.
+ * \param[in] argc Application launch argument counter
+ * \param[in] argv Application launch argument values array pointer
+ * \return Application exit code
+ */
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -21,107 +30,23 @@ int main(int argc, char *argv[])
 
     QTextCodec::setCodecForLocale(utfcodec);
 
-    FileEnumerator *fileEnumerator =
-            new FileEnumerator();
+    // Task parented to the application so that it
+    // will be deleted by the application.
+    FileEnumerator *fileEnumerator = new FileEnumerator(&a);
 
-    /* Application was called without parameters */
-    if(argc == 1)
+    /* Checking for memory allocation problem */
+    if(!fileEnumerator)
     {
-        /* Calling file enumerator method with default settings (from current dir) */
-        fileEnumerator->listFiles();
-        exit(0);
+        exit(TDIR_MEM_ALLOCATION_ERROR);
     }
-    else if (argc == 2)
-    {
-        if(strcmp(argv[1], "-r") == 0)
-        {
-            fileEnumerator->setRecursiveMode(true);
-            fileEnumerator->listFiles();
-            exit(0);
-        }
-        else
-        {
-            QDir dir(argv[1]);
-            if(dir.exists())
-            {
-                qDebug() << "Directory exists! Setting it to default one!" << dir.absolutePath();
-                fileEnumerator->setCurrentDir(dir.absolutePath());
-                fileEnumerator->listFiles();
-                exit(0);
-            }
-            else
-            {
-                qDebug() << "No such directory!";
-                qDebug() << "Checking for file (if mask was set)";
-                QFile file(argv[1]);
-                if(file.exists())
-                {
-                    fileEnumerator->listFiles(file);
-                    exit(0);
-                }
-                else
-                {
-                    exit(-1);
-                }
-            }
-        }
-    }
-    else
-    {
-        if(a.arguments().contains("-r"))
-        {
-            QStringList argList = a.arguments();
 
-            int recursiveOptLastPos = argList.lastIndexOf("-r");
-            if(recursiveOptLastPos + 1 != argList.count())
-            {
-                qDebug() << "Wrong -r option position!";
-                exit(TDIR_ARG_ERR_WRONG_OPTION_POS);
-            }
-            else
-            {
-                int recursiveOptFirstPos = argList.indexOf("-r");
-                if(recursiveOptFirstPos != recursiveOptLastPos)
-                {
-                    qDebug() << "Recursive option duplication found!";
-                    exit(TDIR_ARG_ERR_OPTION_DUPLICATION);
-                }
-                else
-                {
-                    qDebug() << "Setting recursive mode . . .";
-                    fileEnumerator->setRecursiveMode(true);
-                }
-            }
-            QDir dir(argv[1]);
-            if(dir.exists())
-            {
-                qDebug() << "Directory exists! Setting it to default one!" << dir.absolutePath();
-                fileEnumerator->setCurrentDir(dir.absolutePath());
-                fileEnumerator->listFiles();
-                exit(0);
-            }
-            else
-            {
-                qDebug() << "No such directory!";
-                qDebug() << "Checking for file (if mask was set)";
-                QFile file(argv[1]);
-                if(file.exists())
-                {
-                    fileEnumerator->listFiles(file);
-                    exit(0);
-                }
-                else
-                {
-                    exit(-1);
-                }
-            }
-        }
-        else
-        {
-            /* Checking if mask was used */
-            qDebug() << "Checking for mask . . .";
-            fileEnumerator->listFiles(a.arguments());
-        }
-    }
+    // This will cause the application to exit when
+    // the task signals finished.
+    QObject::connect(fileEnumerator, &FileEnumerator::finished, &a, &QCoreApplication::quit);
+
+
+    // This will run the task from the application event loop.
+    QTimer::singleShot(0, fileEnumerator, SLOT(run()));
+
     return a.exec();
 }
