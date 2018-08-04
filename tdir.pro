@@ -28,7 +28,8 @@ SOURCES += main.cpp \
 
 HEADERS += \
     fileenumerator.h \
-    exitcodes.h
+    exitcodes.h \
+    options.h
 
 QMAKE_TARGET_PRODUCT = tdir
 QMAKE_TARGET_DESCRIPTION = Directory file enumerator

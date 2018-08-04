@@ -11,10 +11,14 @@
 #include <QTextCodec>
 #include <QTimer>
 
+#ifdef __TDIR_DEBUG__
 #include <QDebug>
+#endif
 
 #include "fileenumerator.h"
 #include "exitcodes.h"
+
+int _CRT_glob = 0;
 
 /*!
  * Main application function.
@@ -30,22 +34,22 @@ int main(int argc, char *argv[])
 
     QTextCodec::setCodecForLocale(utfcodec);
 
-    // Task parented to the application so that it
-    // will be deleted by the application.
+    /* Destructor will be called on application exit */
     FileEnumerator *fileEnumerator = new FileEnumerator(&a);
 
     /* Checking for memory allocation problem */
     if(!fileEnumerator)
     {
+#ifdef __TDIR_DEBUG__
+        qWarning() << "Can't allocate memory for FileEnumerator class object!";
+#endif
         exit(TDIR_MEM_ALLOCATION_ERROR);
     }
 
-    // This will cause the application to exit when
-    // the task signals finished.
+    /* Connecting FileEnumerator finished() signal with application quit() slot to exit on finish */
     QObject::connect(fileEnumerator, &FileEnumerator::finished, &a, &QCoreApplication::quit);
 
-
-    // This will run the task from the application event loop.
+    /* Run the FileEnumerator run() method function from the application event loop on a timer hit */
     QTimer::singleShot(0, fileEnumerator, SLOT(run()));
 
     return a.exec();
