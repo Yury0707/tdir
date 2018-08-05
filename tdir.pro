@@ -21,7 +21,8 @@ DEFINES += APP_VERSION=\\\"$$VERSION\\\"\
     APP_AUTHOR="\"\\\"Yury Osipov\\\"\""\
     APP_E_MAIL=\\\"yusosipov@yandex.ru\\\"
 
-DEFINES += __TDIR_DEBUG__
+# Uncomment it to see debug messages
+# DEFINES += __TDIR_DEBUG__
 
 SOURCES += main.cpp \
     fileenumerator.cpp
